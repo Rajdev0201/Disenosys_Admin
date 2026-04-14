@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API } from "@/components/utils/Constant";
+import {
+  extractAdminToken,
+  getStoredAdminToken,
+  storeAdminToken,
+} from "@/components/utils/adminAuth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,7 +16,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Handled by `admin/middleware.js` (httpOnly cookies aren't readable from JS anyway).
+    const token = getStoredAdminToken();
+    if (token) {
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.replace(next || "/admin/dashboard");
+    }
   }, [router]);
 
   const canSubmit = useMemo(() => {
@@ -47,11 +56,14 @@ export default function LoginPage() {
         return;
       }
 
+      const token = extractAdminToken(json);
+      if (token) storeAdminToken(token);
+
       const next =
         typeof window !== "undefined"
           ? new URLSearchParams(window.location.search).get("next")
           : null;
-      router.replace(next || "/admin/dashboard");
+      window.location.assign(next || "/admin/dashboard");
     } catch (err) {
       setError(err?.message || "Login failed.");
     } finally {

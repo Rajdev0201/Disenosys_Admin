@@ -142,11 +142,12 @@ export default function CurriculumEditor({ value, onChange }) {
                 <label className="text-xs font-semibold text-slate-600">
                   subTopic (pre-record section page)
                 </label>
-                <input
+                <textarea
                   value={item?.subTopic || ""}
                   onChange={(e) => updateItem(index, { subTopic: e.target.value })}
                   placeholder="Introduction, Top Surface Development, ..."
                   className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-secondary"
+                  rows={3}
                 />
               </div>
               <div className="lg:col-span-2">
@@ -165,11 +166,12 @@ export default function CurriculumEditor({ value, onChange }) {
                 <label className="text-xs font-semibold text-slate-600">
                   subLinks
                 </label>
-                <input
+                <textarea
                   value={item?.subLinks || ""}
                   onChange={(e) => updateItem(index, { subLinks: e.target.value })}
                   placeholder="https://..."
                   className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-secondary"
+                  rows={3}
                 />
               </div>
             </div>

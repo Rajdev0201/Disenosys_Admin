@@ -17,6 +17,10 @@ import logo from "@/assests/white-brand.png";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { API } from "@/components/utils/Constant";
+import {
+  clearAdminToken,
+  getAdminAuthHeaders,
+} from "@/components/utils/adminAuth";
 
 const UserSideBar = () => {
   const path = usePathname();
@@ -243,6 +247,7 @@ const UserSideBar = () => {
                 try {
                   const res = await fetch(`${API}${path}`, {
                     method: "POST",
+                    headers: getAdminAuthHeaders(),
                     credentials: "include",
                   });
                   if (res.ok) {
@@ -261,6 +266,7 @@ const UserSideBar = () => {
                   try {
                     const res = await fetch(`${API}${path}`, {
                       method: "GET",
+                      headers: getAdminAuthHeaders(),
                       credentials: "include",
                     });
                     if (res.ok) break;
@@ -270,6 +276,7 @@ const UserSideBar = () => {
                 }
               }
             } finally {
+              clearAdminToken();
               router.replace("/login");
               setLoggingOut(false);
             }

@@ -16,7 +16,9 @@ export default function QuizEditor({ value, onChange }) {
 
   const stats = useMemo(() => {
     const count = questions.length;
-    const filled = questions.filter((q) => String(q?.question || "").trim()).length;
+    const filled = questions.filter((q) =>
+      String(q?.question || q?.questionText || q?.head || "").trim(),
+    ).length;
     return { count, filled };
   }, [questions]);
 
@@ -50,9 +52,25 @@ export default function QuizEditor({ value, onChange }) {
   const normalizeCorrectIndex = (q) => {
     const options = Array.isArray(q?.options) ? q.options : [];
     const max = Math.max(0, options.length - 1);
+    if (Number.isInteger(q?.correctIndex)) {
+      return Math.min(Math.max(0, q.correctIndex), max);
+    }
+    if (typeof q?.correctAnswer === "number" && Number.isFinite(q.correctAnswer)) {
+      return Math.min(Math.max(0, Number(q.correctAnswer)), max);
+    }
+    if (typeof q?.correctAnswer === "string") {
+      const answer = q.correctAnswer.trim();
+      const matchedIndex = options.findIndex(
+        (option) => String(option || "").trim() === answer,
+      );
+      if (matchedIndex >= 0) return matchedIndex;
+    }
     const idx = Number.isFinite(q?.correctIndex) ? q.correctIndex : 0;
     return Math.min(Math.max(0, idx), max);
   };
+
+  const getQuestionText = (q) =>
+    String(q?.question || q?.questionText || q?.head || "").trim();
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -89,6 +107,7 @@ export default function QuizEditor({ value, onChange }) {
           const q = qRaw || createEmptyQuestion();
           const options = Array.isArray(q.options) ? q.options : ["", "", "", ""];
           const correctIndex = normalizeCorrectIndex(q);
+          const selectedAnswer = options[correctIndex] || "";
           return (
             <div
               key={q?._id || `${qIndex}`}
@@ -100,7 +119,7 @@ export default function QuizEditor({ value, onChange }) {
                     Question {qIndex + 1}
                   </p>
                   <p className="truncate text-sm font-semibold text-slate-900">
-                    {String(q?.question || "").trim() || "Untitled question"}
+                    {getQuestionText(q) || "Untitled question"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -133,7 +152,7 @@ export default function QuizEditor({ value, onChange }) {
                   Question
                 </label>
                 <textarea
-                  value={q.question || ""}
+                  value={q.question || q.questionText || q.head || ""}
                   onChange={(e) => setQuestion(qIndex, { question: e.target.value })}
                   placeholder="Type the question..."
                   rows={2}
@@ -141,11 +160,22 @@ export default function QuizEditor({ value, onChange }) {
                 />
               </div>
 
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                Correct answer: {selectedAnswer.trim() || `Option ${correctIndex + 1}`}
+              </div>
+
               <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {options.map((opt, optIndex) => {
                   const checked = optIndex === correctIndex;
                   return (
-                    <div key={`${qIndex}-${optIndex}`} className="flex items-start gap-2">
+                    <label
+                      key={`${qIndex}-${optIndex}`}
+                      className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition ${
+                        checked
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
                       <input
                         type="radio"
                         name={`correct-${qIndex}`}
@@ -154,17 +184,27 @@ export default function QuizEditor({ value, onChange }) {
                         className="mt-3"
                       />
                       <div className="flex-1">
-                        <label className="text-xs font-semibold text-slate-600">
-                          Option {optIndex + 1}
-                        </label>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold text-slate-600">
+                            Option {optIndex + 1}
+                          </span>
+                          {checked ? (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                              Correct
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Select this radio button to mark the correct answer.
+                        </p>
                         <input
                           value={opt || ""}
                           onChange={(e) => setOption(qIndex, optIndex, e.target.value)}
                           placeholder={`Option ${optIndex + 1}`}
-                          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-secondary"
+                          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-secondary"
                         />
                       </div>
-                    </div>
+                    </label>
                   );
                 })}
               </div>

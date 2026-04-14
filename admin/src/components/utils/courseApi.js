@@ -1,4 +1,5 @@
 import { API } from "@/components/utils/Constant";
+import { getAdminAuthHeaders } from "@/components/utils/adminAuth";
 
 const ENDPOINTS = {
   list: "getAllCourses",
@@ -98,9 +99,10 @@ function parseResponseBody(rawText) {
 async function fetchJson(path, { method = "GET", body } = {}) {
   const res = await fetch(`${API}${path}`, {
     method,
-    headers: {
+    headers: getAdminAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
+    credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -161,9 +163,73 @@ function toCoursePayload(input) {
       : [];
 
   payload.curriculum = Array.isArray(payload.curriculum) ? payload.curriculum : [];
-  payload.questions = Array.isArray(payload.questions) ? payload.questions : [];
+  payload.questions = Array.isArray(payload.questions)
+    ? payload.questions.map((question) => normalizeQuestionPayload(question))
+    : [];
 
   return payload;
+}
+
+function normalizeCorrectIndex(question) {
+  const options = Array.isArray(question?.options)
+    ? question.options.map((option) => String(option || ""))
+    : [];
+  const max = Math.max(0, options.length - 1);
+
+  if (Number.isInteger(question?.correctIndex)) {
+    return Math.min(Math.max(0, question.correctIndex), max);
+  }
+
+  if (
+    typeof question?.correctAnswer === "number" &&
+    Number.isFinite(question.correctAnswer)
+  ) {
+    return Math.min(Math.max(0, Number(question.correctAnswer)), max);
+  }
+
+  if (typeof question?.correctAnswer === "string") {
+    const answer = question.correctAnswer.trim();
+    const matchedIndex = options.findIndex((option) => option.trim() === answer);
+    if (matchedIndex >= 0) return matchedIndex;
+  }
+
+  return 0;
+}
+
+function normalizeQuestionPayload(question) {
+  const item = question && typeof question === "object" ? question : {};
+  const options = Array.isArray(item.options)
+    ? item.options.map((option) => String(option || ""))
+    : [];
+
+  const normalized = {
+    ...item,
+    question: String(
+      item.question || item.questionText || item.head || "",
+    ).trim(),
+    options,
+  };
+
+  normalized.correctIndex = normalizeCorrectIndex({
+    ...normalized,
+    correctAnswer: item.correctAnswer,
+  });
+
+  return normalized;
+}
+
+function normalizeCourseRecord(candidate) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return candidate;
+  }
+
+  return {
+    ...candidate,
+    curriculum: Array.isArray(candidate.curriculum) ? candidate.curriculum : [],
+    questions: Array.isArray(candidate.questions)
+      ? candidate.questions.map((question) => normalizeQuestionPayload(question))
+      : [],
+  };
 }
 
 function pickFirstArray(candidate) {
@@ -206,14 +272,14 @@ export const courseApi = {
   async getById(id) {
     const courseId = ensureId(id);
     const json = await fetchJson(ENDPOINTS.get(courseId));
-    return pickFirstObject(json) || json;
+    return normalizeCourseRecord(pickFirstObject(json) || json);
   },
   async create(payload) {
     const json = await fetchAnyPath(ENDPOINTS.create, {
       method: "POST",
       body: toCoursePayload(payload),
     });
-    return pickFirstObject(json) || json;
+    return normalizeCourseRecord(pickFirstObject(json) || json);
   },
   async update(id, payload) {
     const courseId = ensureId(id);
@@ -226,7 +292,7 @@ export const courseApi = {
     for (const method of methods) {
       try {
         const json = await fetchAnyPath(paths, { method, body });
-        return pickFirstObject(json) || json;
+        return normalizeCourseRecord(pickFirstObject(json) || json);
       } catch (err) {
         lastError = err;
         if (err?.status !== 404 && err?.status !== 405) break;

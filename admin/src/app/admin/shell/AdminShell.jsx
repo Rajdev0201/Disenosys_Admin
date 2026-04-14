@@ -5,6 +5,10 @@ import UserHeader from "@/components/layouts/Navbar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API } from "@/components/utils/Constant";
+import {
+  clearAdminToken,
+  getAdminAuthHeaders,
+} from "@/components/utils/adminAuth";
 
 function normalizeAdminProfile(json) {
   const candidate =
@@ -35,12 +39,15 @@ export default function AdminShell({ children }) {
         try {
           const res = await fetch(`${API}${path}`, {
             method: "GET",
-            headers: { "Content-Type": "application/json" },
+            headers: getAdminAuthHeaders({
+              "Content-Type": "application/json",
+            }),
             credentials: "include",
           });
 
           if (!res.ok) {
             if (res.status === 401 || res.status === 403) {
+              clearAdminToken();
               router.replace("/login");
               return;
             }
@@ -61,6 +68,7 @@ export default function AdminShell({ children }) {
       throw lastError || new Error("Failed to fetch admin info.");
     } catch {
       // If the backend is unreachable or response shape changes, fall back to login.
+      clearAdminToken();
       router.replace("/login");
     } finally {
       setLoading(false);

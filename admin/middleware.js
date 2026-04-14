@@ -32,18 +32,9 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/admin")) {
-    if (!tokenPresent) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("next", `${pathname}${request.nextUrl.search || ""}`);
-      return NextResponse.redirect(url);
-    }
-  }
-
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: ["/login"],
 };
