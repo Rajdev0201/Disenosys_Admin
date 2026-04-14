@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+
+@theme inline{
+  --color-primary: #101359;
+  --color-secondary: #45D2FF;
+  --font-dm-sans: var(--font-dm-sans);
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
