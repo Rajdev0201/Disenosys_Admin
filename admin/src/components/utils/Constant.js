@@ -4,5 +4,5 @@ function withTrailingSlash(value) {
 }
 
 export const API = withTrailingSlash(
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/",
+  "https://disenosys-backendv2-9yuy.onrender.com/" || "http://localhost:8000/",
 );
